@@ -1,12 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "FPS_Character.h"
-#include "Animation/AnimInstance.h"
-#include "Camera/CameraComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/InputComponent.h"
-#include "GameFramework/InputSettings.h"
-#include "Kismet/GameplayStatics.h"
+
 
 // Sets default values
 AFPS_Character::AFPS_Character()
@@ -32,12 +27,12 @@ AFPS_Character::AFPS_Character()
 	FirstPersonCameraComponent->RelativeRotation = FRotator(0, 90.f, 0);
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
-	// Note: The ProjectileClass and the skeletal mesh/anim blueprints for Mesh1P, FP_Gun, and VR_Gun 
-	// are set in the derived blueprint asset named MyCharacter to avoid direct content references in C++.
-
 	// Attach camera to the Head Socket
 	FName FPVCameraSocket = TEXT("FPVCamera");
 	FirstPersonCameraComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FPVCameraSocket);
+
+	// Create a physics handle component
+	PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("GrabberComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -59,9 +54,6 @@ void AFPS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
-	// Bind fire event
-	//PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_templateCharacter::OnFire);
-
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AFPS_Character::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AFPS_Character::MoveRight);
@@ -73,7 +65,14 @@ void AFPS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("TurnRate", this, &AFPS_Character::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AFPS_Character::LookUpAtRate);
+
+	// Bind Grab and Push events
+	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AFPS_Character::GrabObject);
+	PlayerInputComponent->BindAction("Push", IE_Released, this, &AFPS_Character::PushObject);
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Events
 
 void AFPS_Character::MoveForward(float Value)
 {
@@ -103,4 +102,66 @@ void AFPS_Character::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void AFPS_Character::GrabObject()
+{
+	GetPhysicsBodyInReach();
+}
+
+void AFPS_Character::PushObject()
+{
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Line trace functions
+
+FVector AFPS_Character::ReturnReachLineStart()
+{
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+		PlayerViewPointLocation,
+		PlayerViewPointRotation
+	);
+
+	return PlayerViewPointLocation;
+}
+
+FVector AFPS_Character::ReturnReachLineEnd()
+{
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+		PlayerViewPointLocation,
+		PlayerViewPointRotation
+	);
+
+	return PlayerViewPointLocation + PlayerViewPointRotation.Vector() * this->ReachDistance;
+}
+
+FHitResult AFPS_Character::GetPhysicsBodyInReach()
+{
+	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
+
+	FHitResult HitResulst;
+	GetWorld()->LineTraceSingleByObjectType(
+		HitResulst,
+		ReturnReachLineStart(),
+		ReturnReachLineEnd(),
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+		TraceParameters
+	);
+
+	// Just for debug start
+	AActor* ActorHit = HitResulst.GetActor();
+	if (ActorHit) {
+		UE_LOG(LogTemp, Warning, TEXT("Line trace hit: %s"), *(ActorHit->GetName()));
+	}
+	// Just for debug end
+
+	return HitResulst;
 }
