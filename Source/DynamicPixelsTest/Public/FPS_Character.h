@@ -4,7 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "DrawDebugHelpers.h"
+#include "WearableActor.h"
+#include "Animation/AnimInstance.h"
+#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/InputComponent.h"
+#include "PhysicsEngine/PhysicsHandleComponent.h"
+#include "GameFramework/InputSettings.h"
+#include "Kismet/GameplayStatics.h"
 #include "FPS_Character.generated.h"
+
 
 class UInputComponent;
 
@@ -17,9 +27,18 @@ class DYNAMICPIXELSTEST_API AFPS_Character : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
 
+	UPROPERTY(EditAnywhere)
+	USceneComponent* HoldingComponent;
+
+	UPROPERTY(EditAnywhere)
+	AWearableActor* CurrentItem;
+
 public:
 	// Sets default values for this character's properties
 	AFPS_Character();
+
+	// Called every frame
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	virtual void BeginPlay();
@@ -27,11 +46,11 @@ protected:
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-		float BaseTurnRate;
+	float BaseTurnRate;
 
 	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-		float BaseLookUpRate;
+	float BaseLookUpRate;
 
 protected:
 
@@ -53,13 +72,37 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 
+	void GrabObject();
+
+	void PushObject();
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
 
+private:
+	// Line tracing functions and variables
+	FVector ReturnReachLineEnd(float distance);
+	FVector ReturnReachLineStart();
+	FHitResult GetPhysicsBodyInReach();
+
+	UPROPERTY(EditAnywhere)
+	float ReachDistance = 150.f;
+
+	UPROPERTY(EditAnywhere)
+	float HoldDistance = 80.f;
+
+	UPROPERTY(EditAnywhere)
+	float PushForce = 1000000.f;
+
+	UPROPERTY(EditAnywhere)
+	bool isDrawDebugLine = false;
+
+	bool bCanMove = true;
+	bool bHoldingItem = false;
+
 public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
-
 };
