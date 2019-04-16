@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "GrabberComponent.h"
 #include "DrawDebugHelpers.h"
+#include "WearableActor.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -17,7 +17,6 @@
 
 
 class UInputComponent;
-class UphysicsHandleComponent;
 
 UCLASS(config=Game)
 class DYNAMICPIXELSTEST_API AFPS_Character : public ACharacter
@@ -28,12 +27,18 @@ class DYNAMICPIXELSTEST_API AFPS_Character : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics", meta = (AllowPrivateAccess = "true"))
-	class UPhysicsHandleComponent* PhysicsHandle;
+	UPROPERTY(EditAnywhere)
+	USceneComponent* HoldingComponent;
+
+	UPROPERTY(EditAnywhere)
+	AWearableActor* CurrentItem;
 
 public:
 	// Sets default values for this character's properties
 	AFPS_Character();
+
+	// Called every frame
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	virtual void BeginPlay();
@@ -78,15 +83,24 @@ protected:
 
 private:
 	// Line tracing functions and variables
-	FVector ReturnReachLineEnd();
+	FVector ReturnReachLineEnd(float distance);
 	FVector ReturnReachLineStart();
 	FHitResult GetPhysicsBodyInReach();
 
 	UPROPERTY(EditAnywhere)
-	float ReachDistance = 100.f;
+	float ReachDistance = 150.f;
 
 	UPROPERTY(EditAnywhere)
-	bool isDrawDebugLine = true;
+	float HoldDistance = 80.f;
+
+	UPROPERTY(EditAnywhere)
+	float PushForce = 1000000.f;
+
+	UPROPERTY(EditAnywhere)
+	bool isDrawDebugLine = false;
+
+	bool bCanMove = true;
+	bool bHoldingItem = false;
 
 public:
 	/** Returns FirstPersonCameraComponent subobject **/

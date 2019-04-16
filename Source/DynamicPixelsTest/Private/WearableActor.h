@@ -3,20 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/StaticMeshComponent.h"
+#include "Camera/CameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "WearableActor.generated.h"
 
 UCLASS()
 class AWearableActor : public AActor
 {
 	GENERATED_BODY()
-/*
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-	class UStaticMeshComponent* Mesh;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-	class USphereComponent* Sphere;
-	*/
 public:	
 	// Sets default values for this actor's properties
 	AWearableActor();
@@ -29,11 +27,24 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	/*
-public:
-	// Returns Mesh1P subobject
-	FORCEINLINE class UStaticMeshComponent* GetMesh() const { return Mesh; }
-	// Returns FirstPersonCameraComponent subobject 
-	FORCEINLINE class USphereComponent* GetSphereCollision() const { return Sphere; }
-	*/
+	UPROPERTY(EditAnywhere)
+	UStaticMeshComponent* Mesh;
+
+	UPROPERTY(EditAnywhere)
+	USceneComponent* HoldingComponent;
+
+	UFUNCTION()
+	void Pickup();
+
+	UFUNCTION()
+	void Push(float PushForce);
+
+	UFUNCTION()
+	void UpdateState();
+
+	bool bHolding = false;
+	bool bGravity = true;
+
+	ACharacter* PlayerCharacter;
+	UCameraComponent* PlayerCamera;
 };

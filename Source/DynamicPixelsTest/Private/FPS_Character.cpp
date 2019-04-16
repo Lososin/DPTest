@@ -31,8 +31,12 @@ AFPS_Character::AFPS_Character()
 	FName FPVCameraSocket = TEXT("FPVCamera");
 	FirstPersonCameraComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), FPVCameraSocket);
 
-	// Create a physics handle component
-	PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("GrabberComponent"));
+	//
+	HoldingComponent = CreateDefaultSubobject<USceneComponent>(TEXT("HoldingComponent"));
+	FName HandSocket = TEXT("HandSocket");
+	HoldingComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), HandSocket);
+
+	CurrentItem = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -41,6 +45,18 @@ void AFPS_Character::BeginPlay()
 	Super::BeginPlay();
 	
 }
+
+// Called every frame
+void AFPS_Character::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
+	if (this->isDrawDebugLine)
+	{
+		DrawDebugLine(GetWorld(), ReturnReachLineStart(), ReturnReachLineEnd(ReachDistance), FColor::Green, false, 1, 0, 1);
+	}
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // Input
@@ -68,7 +84,7 @@ void AFPS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 
 	// Bind Grab and Push events
 	PlayerInputComponent->BindAction("Grab", IE_Pressed, this, &AFPS_Character::GrabObject);
-	PlayerInputComponent->BindAction("Push", IE_Released, this, &AFPS_Character::PushObject);
+	PlayerInputComponent->BindAction("Push", IE_Pressed, this, &AFPS_Character::PushObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -106,12 +122,39 @@ void AFPS_Character::LookUpAtRate(float Rate)
 
 void AFPS_Character::GrabObject()
 {
-	GetPhysicsBodyInReach();
+	auto Hit = GetPhysicsBodyInReach();
+	auto ComponentToGrab = Hit.GetComponent();
+	auto ActorHit = Hit.GetActor();
+
+	AWearableActor* WearableActor = Cast<AWearableActor>(ActorHit);
+
+	if (ActorHit) 
+	{
+		if (WearableActor == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("It is not a wearable Actor"));
+		}
+		else
+		{
+			if (CurrentItem != nullptr)
+			{
+				CurrentItem->Push(1000);
+			}
+
+			CurrentItem = WearableActor;
+			bHoldingItem = true;
+			CurrentItem->Pickup();
+		}
+	}
 }
 
 void AFPS_Character::PushObject()
 {
-
+	if (CurrentItem != nullptr)
+	{
+		CurrentItem->Push(PushForce);
+		CurrentItem = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,7 +173,7 @@ FVector AFPS_Character::ReturnReachLineStart()
 	return PlayerViewPointLocation;
 }
 
-FVector AFPS_Character::ReturnReachLineEnd()
+FVector AFPS_Character::ReturnReachLineEnd(float distance)
 {
 	FVector PlayerViewPointLocation;
 	FRotator PlayerViewPointRotation;
@@ -140,7 +183,7 @@ FVector AFPS_Character::ReturnReachLineEnd()
 		PlayerViewPointRotation
 	);
 
-	return PlayerViewPointLocation + PlayerViewPointRotation.Vector() * this->ReachDistance;
+	return PlayerViewPointLocation + PlayerViewPointRotation.Vector() * distance;
 }
 
 FHitResult AFPS_Character::GetPhysicsBodyInReach()
@@ -151,7 +194,7 @@ FHitResult AFPS_Character::GetPhysicsBodyInReach()
 	GetWorld()->LineTraceSingleByObjectType(
 		HitResulst,
 		ReturnReachLineStart(),
-		ReturnReachLineEnd(),
+		ReturnReachLineEnd(ReachDistance),
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
 		TraceParameters
 	);
