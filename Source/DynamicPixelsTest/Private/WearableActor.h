@@ -6,6 +6,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "WearableActor.generated.h"
@@ -34,17 +35,14 @@ public:
 	USceneComponent* HoldingComponent;
 
 	UFUNCTION()
-	void Pickup();
+	void Pickup(USceneComponent* OwnerComponent);
 
 	UFUNCTION()
-	void Push(float PushForce);
+	void Push(float PushForce, FVector Direction);
 
 	UFUNCTION()
 	void UpdateState();
 
 	bool bHolding = false;
 	bool bGravity = true;
-
-	ACharacter* PlayerCharacter;
-	UCameraComponent* PlayerCamera;
 };

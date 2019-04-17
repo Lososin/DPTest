@@ -18,24 +18,6 @@ AWearableActor::AWearableActor()
 void AWearableActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-	PlayerCamera = PlayerCharacter->FindComponentByClass<UCameraComponent>();
-
-	TArray<USceneComponent*> Components;
-
-	PlayerCharacter->GetComponents(Components);
-
-	if (Components.Num() > 0)
-	{
-		for (auto& Comp : Components)
-		{
-			if (Comp->GetName() == "HoldingComponent")
-			{
-				HoldingComponent = Cast<USceneComponent>(Comp);
-			}
-		}
-	}
 }
 
 // Called every frame
@@ -58,19 +40,19 @@ void AWearableActor::UpdateState() {
 	Mesh->SetCollisionEnabled(bHolding ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
 }
 
-void AWearableActor::Pickup()
+void AWearableActor::Pickup(USceneComponent* OwnerComponent)
 {
+	HoldingComponent = Cast<USceneComponent>(OwnerComponent);
 	bHolding = true;
 	bGravity = false;
 	UpdateState();
 }
 
-void AWearableActor::Push(float PushForce)
+void AWearableActor::Push(float PushForce, FVector Direction)
 {
 	bHolding = false;
 	bGravity = true;
 	UpdateState();
-
-	auto ForwardVector = PlayerCamera->GetForwardVector();
-	Mesh->AddForce(ForwardVector * PushForce * Mesh->GetMass());
+	HoldingComponent = nullptr;
+	Mesh->AddForce(Direction * PushForce * Mesh->GetMass());
 }
