@@ -91,15 +91,11 @@ private:
 	float ReachDistance = 150.f;
 
 	UPROPERTY(EditAnywhere)
-	float HoldDistance = 80.f;
-
-	UPROPERTY(EditAnywhere)
 	float PushForce = 1000000.f;
 
 	UPROPERTY(EditAnywhere)
 	bool isDrawDebugLine = false;
 
-	bool bCanMove = true;
 	bool bHoldingItem = false;
 
 public:

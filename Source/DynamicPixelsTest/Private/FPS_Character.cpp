@@ -138,12 +138,12 @@ void AFPS_Character::GrabObject()
 		{
 			if (CurrentItem != nullptr)
 			{
-				CurrentItem->Push(1000);
+				CurrentItem->Push(1000, GetFirstPersonCameraComponent()->GetForwardVector());
 			}
 
 			CurrentItem = WearableActor;
 			bHoldingItem = true;
-			CurrentItem->Pickup();
+			CurrentItem->Pickup(HoldingComponent);
 		}
 	}
 }
@@ -152,7 +152,7 @@ void AFPS_Character::PushObject()
 {
 	if (CurrentItem != nullptr)
 	{
-		CurrentItem->Push(PushForce);
+		CurrentItem->Push(PushForce, GetFirstPersonCameraComponent()->GetForwardVector());
 		CurrentItem = nullptr;
 	}
 }
